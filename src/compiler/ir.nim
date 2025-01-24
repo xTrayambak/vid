@@ -1,4 +1,5 @@
 import std/options
+import ./x86/register_allocator/types
 
 type
   PrimitiveKind* = enum
@@ -8,17 +9,7 @@ type
     case kind*: PrimitiveKind
     of pkString:
       strVal*: string
-
-  Register* = enum
-    rax = "rax"
-    rbx = "rbx"
-    rcx = "rcx"
-    rdx = "rdx"
-    rsi = "rsi"
-    rdi = "rdi"
-    rbp = "rbp"
-    rsp = "rsp"
-
+  
   Pool* = object
     name*: string
     data*: seq[Primitive]
@@ -30,7 +21,8 @@ type
   Opcode* = enum
     LoadStrAddr = 0
     IntMul = 1
-    ReturnVal = 2
+    LlPrint = 2
+    ReturnVal = 3
 
   Instruction* = object
     case op*: Opcode
@@ -42,6 +34,9 @@ type
     of LoadStrAddr:
       strPoolRef*: PoolRef
       lstrDest*: Register
+      strSym*: Sym
+    of LlPrint:
+      printSym*: Sym
 
   Clause* = object
     identifier*: uint64

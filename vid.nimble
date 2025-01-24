@@ -11,3 +11,5 @@ bin           = @["vid"]
 # Dependencies
 
 requires "nim >= 2.2.0"
+
+requires "pretty >= 0.2.0"

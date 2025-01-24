@@ -1,5 +1,7 @@
-import std/[os, options, osproc]
+import std/[tables, terminal, os, options, osproc]
 import ./compiler/[ir, x86/codegen]
+import ./compiler/x86/register_allocator/types
+import pretty
 
 let
   ld = findExe("ld")
@@ -21,7 +23,12 @@ program.clauses.add(
     instructions: @[
       Instruction(
         op: LoadStrAddr,
+        strSym: sym("msg", 0),
         strPoolRef: PoolRef(name: "consts", pos: 0'u)
+      ),
+      Instruction(
+        op: LlPrint,
+        printSym: sym("msg", 0)
       )
     ]
   )
@@ -29,9 +36,26 @@ program.clauses.add(
 
 var cgen: CodeGenerator
 cgen.eat(program)
+
+stdout.styledWriteLine("< ", styleBright, "CODEGEN", resetStyle, " >")
 let asmSrc = cgen.emit()
 
 echo asmSrc
 writeFile("output.asm", asmSrc)
+stdout.styledWriteLine("< ", styleBright, "ASSEMBLE", resetStyle, " >")
 discard execCmd(assembler & " output.asm -o output.o")
-discard execCmd("ld -o output output.o")
+
+stdout.styledWriteLine("< ", styleBright, "LINK", resetStyle, " >")
+discard execCmd("ld -lc -o output output.o")
+
+#[ var graph = initInterferenceGraph(
+  @[
+    Sym(
+      name: "a",
+      index: 0,
+      moment: 0,
+      lifetime: some(Lifetime(first: 0, last: some(3'u)))
+    )
+  ]
+)
+print graph ]#

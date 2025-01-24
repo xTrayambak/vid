@@ -1,13 +1,16 @@
 import std/[strutils, tables]
 import ../ir
 import ./register_allocator/[types]
+import pretty
 
 type
   CodeGenerator* = object
     program*: Program
     output: string
 
-    baked: Table[string, string]
+    syms*: seq[Sym]
+    tracker*: Table[Lifetime, Table[Sym, Register]]
+    currLifetime*: Lifetime
 
 template `>`*(data: string) =
   cgen.output &= data
@@ -58,6 +61,7 @@ proc emit*(cgen: var CodeGenerator): string =
   flush; indent
   > ".global _start"
   flush; indent
+  > ".extern printf"
 
   dedent
 
@@ -65,22 +69,34 @@ proc emit*(cgen: var CodeGenerator): string =
   flush; indent
   
   let clause = cgen.program.clauses.get("main")
+  cgen.tracker[cgen.currLifetime] = initTable[Sym, Register]()
   for inst in clause.instructions:
     case inst.op
     of LoadStrAddr:
-      > ("lea $1(%rip), %rsi" % [
+      > ("lea $1(%rip), %rdi" % [
           cgen.dataRef(
             cgen.getPool(inst.strPoolRef.name),
             inst.strPoolRef.pos
           )
         ]
       )
+      cgen.syms &= inst.strSym
+      cgen.tracker[cgen.currLifetime][inst.strSym] = rdi
+    of Llprint:
+      # low level print
+      let sym = inst.printSym
+      let reg = cgen.tracker[cgen.currLifetime][sym]
+      flush; indent
+      > "xor %eax, %eax"
+      flush; indent
+      > "call printf"
+      flush; indent
     else: > "nop"
 
   flush; indent
-  > "mov $60, %rax"
+  > "mov $60, %eax"
   flush; indent
-  > "mov $0, %rdi"
+  > "xor %edi, %edi"
   flush; indent
   > "syscall"
   dedent
