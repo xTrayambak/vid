@@ -31,7 +31,7 @@ type
     adjacent*: seq[ptr Vertex]
     unavailableRegs*: seq[Register]
 
-  InterferenceGraph = object
+  InterferenceGraph* = object
     regs*: Table[string, Vertex]
 
 func hash*(lifetime: Lifetime): Hash =

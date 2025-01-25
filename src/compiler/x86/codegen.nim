@@ -9,8 +9,8 @@ type
     output: string
 
     syms*: seq[Sym]
-    tracker*: Table[Lifetime, Table[Sym, Register]]
-    currLifetime*: Lifetime
+    tracker*: Table[Sym, Register]
+    graph*: InterferenceGraph
 
 template `>`*(data: string) =
   cgen.output &= data
@@ -61,7 +61,7 @@ proc emit*(cgen: var CodeGenerator): string =
   flush; indent
   > ".global _start"
   flush; indent
-  > ".extern printf"
+  > ".extern puts"
 
   dedent
 
@@ -69,7 +69,6 @@ proc emit*(cgen: var CodeGenerator): string =
   flush; indent
   
   let clause = cgen.program.clauses.get("main")
-  cgen.tracker[cgen.currLifetime] = initTable[Sym, Register]()
   for inst in clause.instructions:
     case inst.op
     of LoadStrAddr:
@@ -81,15 +80,12 @@ proc emit*(cgen: var CodeGenerator): string =
         ]
       )
       cgen.syms &= inst.strSym
-      cgen.tracker[cgen.currLifetime][inst.strSym] = rdi
     of Llprint:
       # low level print
       let sym = inst.printSym
-      let reg = cgen.tracker[cgen.currLifetime][sym]
+      let reg = cgen.tracker[sym]
       flush; indent
-      > "xor %eax, %eax"
-      flush; indent
-      > "call printf"
+      > "call puts"
       flush; indent
     else: > "nop"
 

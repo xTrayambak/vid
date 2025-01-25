@@ -41,9 +41,9 @@ stdout.styledWriteLine("< ", styleBright, "CODEGEN", resetStyle, " >")
 let asmSrc = cgen.emit()
 
 echo asmSrc
-writeFile("output.asm", asmSrc)
+writeFile("output.s", asmSrc)
 stdout.styledWriteLine("< ", styleBright, "ASSEMBLE", resetStyle, " >")
-discard execCmd(assembler & " output.asm -o output.o")
+discard execCmd(assembler & " output.s -o output.o")
 
 stdout.styledWriteLine("< ", styleBright, "LINK", resetStyle, " >")
 discard execCmd("ld -lc -o output output.o")
